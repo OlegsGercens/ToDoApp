@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToDo List</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        /* Styling for messages */
+        .message {
+            padding: 10px;
+            margin-top: 20px;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .info {
+            background-color: #cce5ff;
+            color: #004085;
+        }
+    </style>
+</head>
+<body>
+<h1>ToDo List</h1>
+
+<!-- UserId Input Box -->
+<label for="userId">Enter User ID: </label>
+<input type="number" id="userId" min="1" required placeholder="Enter User ID (e.g., 1)">
+<button onclick="fetchTodosFromInput()">Load ToDos</button>
+<button onclick="refreshTodos()">Refresh</button>
+
+<table id="todoTable" border="1">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Title</th>
+        <th>Completed</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+
+    </tbody>
+</table>
+
+<div id="statusMessage" class="message" style="display: none;"></div>
+
+<script>
+    // Fetch todos by userId from input
+    function fetchTodosFromInput() {
+        const userId = $('#userId').val();
+        if (userId) {
+            fetchTodos(userId);
+        } else {
+            showMessage('error', 'Please enter a valid user ID.');
+        }
+    }
+
+    // Fetch todos by userId and populate the table
+    function fetchTodos(userId) {
+        $.get(`todos/${userId}`, function(data, status, xhr) {
+            if (xhr.status === 200) {
+                $('#todoTable tbody').empty();
+                if (data.length === 0) {
+                    showMessage('info', 'Congrats! No more todos for you!');
+                }
+                data.forEach(todo => {
+                    const row = `<tr>
+                            <td>${todo.id}</td>
+                            <td>${todo.title}</td>
+                            <td>${todo.completed ? 'Yes' : 'No'}</td>
+                            <td><button onclick="removeTodo(${userId}, ${todo.id})">Remove</button></td>
+                        </tr>`;
+                    $('#todoTable tbody').append(row);
+                });
+            }
+        }).fail(function(xhr, status, error) {
+            // Show error message if the request fails
+            const errorMessage = xhr.responseText || 'An error occurred while fetching todos.';
+            showMessage('error', errorMessage);
+        });
+    }
+
+    // Refresh todos for the selected user
+    function refreshTodos() {
+        const userId = $('#userId').val();
+        if (userId) {
+            $.get(`todos/${userId}/refresh`, function(data) {
+                fetchTodos(userId);
+            }).fail(function(xhr, status, error) {
+                const errorMessage = xhr.responseText || 'An error occurred while refreshing todos.';
+                showMessage('error', errorMessage);
+            });
+        } else {
+            showMessage('error', 'Please enter a user ID to refresh.');
+        }
+        showMessage('success', 'Todos refreshed successfully!');
+    }
+
+    // Remove a specific todo
+    function removeTodo(userId, todoId) {
+        $.get(`todos/${userId}/remove/${todoId}`, function(data) {
+            fetchTodos(userId);  // Reload the updated todo list
+            showMessage('success', 'Todo removed successfully!');
+        }).fail(function(xhr, status, error) {
+            const errorMessage = xhr.responseText || 'An error occurred while removing the todo.';
+            showMessage('error', errorMessage);
+        });
+    }
+
+    // Display message to the user
+    function showMessage(type, message) {
+        const messageBox = $('#statusMessage');
+        messageBox.removeClass('success error info').addClass(type);
+        messageBox.text(message).show();
+
+        // Hide the message after 3 seconds
+        setTimeout(function() {
+            messageBox.fadeOut();
+        }, 8000);
+    }
+
+    // Initial load or prompt
+    $(document).ready(function() {
+        $('#userId').focus();
+    });
+</script>
+</body>
+</html>
