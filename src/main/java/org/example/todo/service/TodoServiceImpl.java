@@ -22,13 +22,10 @@ public class TodoServiceImpl implements TodoService {
 
     @Override
     public List<Todo> getTodosByUserId(int userId) {
-        if (userId <= 0) {
-            throw new IllegalArgumentException("User ID must be greater than 0");
-        }
+        idChecker(userId);
         if (todoList == null) {
             downloadTodosFromUrl();
         }
-
         return todoList.stream()
                 .filter(todo -> todo.getUserId() == userId)
                 .collect(Collectors.toList());
@@ -53,9 +50,8 @@ public class TodoServiceImpl implements TodoService {
 
     @Override
     public List<Todo> removeTodoByUserIdAndTodoId(int userId, int id) {
-        if (userId <= 0 || id <= 0) {
-            throw new IllegalArgumentException("User ID and Todo ID must be greater than 0.");
-        }
+        idChecker(userId);
+        idChecker(id);
         if (todoList == null) {
             throw new NoSuchElementException("No todos available to remove.");
         }
@@ -66,5 +62,17 @@ public class TodoServiceImpl implements TodoService {
 
         todoList.remove(todoToRemoveInList.get(0));
         return getTodosByUserId(userId);
+    }
+
+    @Override
+    public List<Todo> refresh(int userId) {
+        downloadTodosFromUrl();
+        return getTodosByUserId(userId);
+    }
+
+    private void idChecker (int id){
+        if (id <= 0) {
+            throw new IllegalArgumentException("ID must be greater than 0");
+        }
     }
 }

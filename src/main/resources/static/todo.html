@@ -65,12 +65,12 @@
     // Fetch todos by userId and populate the table
     function fetchTodos(userId) {
         $.get(`todos/${userId}`, function(data, status, xhr) {
-            if (xhr.status === 200) {
+            if (xhr.status === 200 && data.t) {  // Check if data contains 't' (the todo list)
                 $('#todoTable tbody').empty();
-                if (data.length === 0) {
+                if (data.t.length === 0) {
                     showMessage('info', 'Congrats! No more todos for you!');
                 }
-                data.forEach(todo => {
+                data.t.forEach(todo => {
                     const row = `<tr>
                             <td>${todo.id}</td>
                             <td>${todo.title}</td>
@@ -79,11 +79,19 @@
                         </tr>`;
                     $('#todoTable tbody').append(row);
                 });
+            } else if (data.error) {
+                // If there is an error, display it
+                showMessage('error', data.error);  // Display the error from response
             }
         }).fail(function(xhr, status, error) {
-            // Show error message if the request fails
-            const errorMessage = xhr.responseText || 'An error occurred while fetching todos.';
-            showMessage('error', errorMessage);
+            // Handle the error responses
+            if (xhr.responseJSON && xhr.responseJSON.error) {
+                // Display error message from response body (error)
+                showMessage('error', xhr.responseJSON.error);
+            } else {
+                // If no error is returned from backend, show generic error message
+                showMessage('error', 'An unknown error occurred while fetching todos.');
+            }
         });
     }
 
@@ -92,25 +100,38 @@
         const userId = $('#userId').val();
         if (userId) {
             $.get(`todos/${userId}/refresh`, function(data) {
-                fetchTodos(userId);
+                if (data.t) {
+                    fetchTodos(userId);
+                    showMessage('success', 'Todos refreshed successfully!');
+                } else if (data.error) {
+                    showMessage('error', data.error);
+                }
             }).fail(function(xhr, status, error) {
-                const errorMessage = xhr.responseText || 'An error occurred while refreshing todos.';
+                const errorMessage = xhr.responseJSON?.error || 'An error occurred while refreshing todos.';
                 showMessage('error', errorMessage);
             });
         } else {
             showMessage('error', 'Please enter a user ID to refresh.');
         }
-        showMessage('success', 'Todos refreshed successfully!');
     }
 
     // Remove a specific todo
     function removeTodo(userId, todoId) {
         $.get(`todos/${userId}/remove/${todoId}`, function(data) {
-            fetchTodos(userId);  // Reload the updated todo list
-            showMessage('success', 'Todo removed successfully!');
+            if (data.t) {
+                fetchTodos(userId);  // Reload the updated todo list
+                showMessage('success', 'Todo removed successfully!');
+            } else if (data.error) {
+                showMessage('error', data.error); // Show error message if returned from backend
+            }
         }).fail(function(xhr, status, error) {
-            const errorMessage = xhr.responseText || 'An error occurred while removing the todo.';
-            showMessage('error', errorMessage);
+            // If the backend sends an error, show that
+            if (xhr.responseJSON && xhr.responseJSON.error) {
+                showMessage('error', xhr.responseJSON.error);
+            } else {
+                // Generic error if the error structure isn't available
+                showMessage('error', 'An error occurred while removing the todo.');
+            }
         });
     }
 
@@ -120,7 +141,7 @@
         messageBox.removeClass('success error info').addClass(type);
         messageBox.text(message).show();
 
-        // Hide the message after 3 seconds
+        // Hide the message after 8 seconds
         setTimeout(function() {
             messageBox.fadeOut();
         }, 8000);
@@ -133,3 +154,5 @@
 </script>
 </body>
 </html>
+
+

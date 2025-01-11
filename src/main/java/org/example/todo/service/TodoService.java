@@ -11,4 +11,6 @@ public interface TodoService {
     void downloadTodosFromUrl();
 
     List<Todo> removeTodoByUserIdAndTodoId (int userId, int id);
+
+    List<Todo> refresh (int userId);
 }
