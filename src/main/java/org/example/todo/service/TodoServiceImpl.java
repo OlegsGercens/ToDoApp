@@ -20,6 +20,14 @@ public class TodoServiceImpl implements TodoService {
 
     public List<Todo> todoList = null;
 
+    public void setTodoList(List<Todo> todoList) {
+        this.todoList = todoList;
+    }
+
+    public List<Todo> getTodoList() {
+        return todoList;
+    }
+
     @Override
     public List<Todo> getTodosByUserId(int userId) {
         idChecker(userId);
@@ -60,6 +68,9 @@ public class TodoServiceImpl implements TodoService {
                 .filter(todo -> todo.getUserId() == userId && todo.getId() == id)
                 .toList();
 
+        if(todoToRemoveInList.isEmpty()) {
+            throw new NoSuchElementException("Todo not found.");
+        }
         todoList.remove(todoToRemoveInList.get(0));
         return getTodosByUserId(userId);
     }
